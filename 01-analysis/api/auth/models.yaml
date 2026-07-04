@@ -1,0 +1,53 @@
+openapi: 3.0.3
+info:
+  title: Auth Models
+  version: 1.0.0
+
+components:
+  schemas:
+    SendSmsRequest:
+      type: object
+      required: [phone]
+      properties:
+        phone:
+          type: string
+          description: Номер в международном формате (E.164)
+          example: '+79991234567'
+
+    SendSmsResponse:
+      type: object
+      required: [expiresIn]
+      properties:
+        expiresIn:
+          type: integer
+          description: Срок жизни кода, секунды
+          example: 300
+
+    VerifySmsRequest:
+      type: object
+      required: [phone, code]
+      properties:
+        phone:
+          type: string
+          example: '+79991234567'
+        code:
+          type: string
+          description: 4–6 цифр
+          pattern: '^\d{4,6}$'
+
+    AuthResponse:
+      type: object
+      required: [accessToken, expiresIn]
+      properties:
+        accessToken:
+          type: string
+        expiresIn:
+          type: integer
+          description: Срок жизни токена, секунды
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT-токен, полученный через /auth/sms/verify

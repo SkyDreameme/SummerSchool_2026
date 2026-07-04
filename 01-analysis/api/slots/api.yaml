@@ -1,0 +1,66 @@
+openapi: 3.0.3
+info:
+  title: Slots API
+  version: 1.0.0
+
+tags:
+  - name: Slots
+    description: Расписание слотов (SCR-002, SCR-003, UC-2)
+
+paths:
+  /slots:
+    get:
+      tags: [Slots]
+      operationId: listSlots
+      summary: Список слотов с фильтрацией по датам (FR-2, UC-2, BS-003)
+      description: |
+        По умолчанию возвращает слоты на 7 дней вперёд.
+        Клиент может расширить диапазон через query-параметры `from` / `to`.
+        Если `availableSeats <= 0` — слот всё равно возвращается (SCR-002
+        показывает empty state «мест нет», FR-11).
+      parameters:
+        - name: from
+          in: query
+          required: false
+          description: Начало диапазона (ISO-8601). По умолчанию — текущая дата.
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          description: Конец диапазона (ISO-8601). По умолчанию — +7 дней.
+          schema:
+            type: string
+            format: date
+        - name: trackConfiguration
+          in: query
+          required: false
+          schema:
+            $ref: '../common/models.yaml#/components/schemas/TrackConfiguration'
+      responses:
+        '200':
+          description: Список слотов
+          content:
+            application/json:
+              schema:
+                $ref: './models.yaml#/components/schemas/SlotListResponse'
+        '400':
+          $ref: '../common/models.yaml#/components/responses/BadRequest'
+
+  /slots/{slotId}:
+    get:
+      tags: [Slots]
+      operationId: getSlot
+      summary: Детали слота (SCR-003, UC-2)
+      parameters:
+        - $ref: './models.yaml#/components/parameters/SlotId'
+      responses:
+        '200':
+          description: Детали слота
+          content:
+            application/json:
+              schema:
+                $ref: './models.yaml#/components/schemas/Slot'
+        '404':
+          $ref: '../common/models.yaml#/components/responses/NotFound'

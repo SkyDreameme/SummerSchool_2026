@@ -1,0 +1,20 @@
+openapi: 3.0.3
+info:
+  title: Profile Models
+  version: 1.0.0
+
+components:
+  schemas:
+    Client:
+      type: object
+      required: [phone, loyaltyStatus, discountPercent]
+      properties:
+        phone:
+          type: string
+          description: Маскированный или полный (зависит от политики)
+        loyaltyStatus:
+          $ref: '../common/models.yaml#/components/schemas/LoyaltyStatus'
+        discountPercent:
+          type: integer
+          enum: [0, 10, 20]
+          description: Размер скидки, применяется при расчёте finalPrice

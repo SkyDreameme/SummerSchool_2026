@@ -1,0 +1,50 @@
+openapi: 3.0.3
+info:
+  title: Apex Karting — Client API
+  description: |
+    REST API клиентского мобильного приложения картинг-центра «Апекс».
+    Бэкенд является black-box источником истины (NFR-1).
+  version: 1.0.0
+  contact:
+    name: Apex Backend Team
+
+servers:
+  - url: https://api.apex-karting.ru/v1
+    description: Production
+
+security:
+  - BearerAuth: []
+
+paths:
+  # Auth
+  /auth/sms/send:
+    $ref: './auth/api.yaml#/paths/~1auth~1sms~1send'
+  /auth/sms/verify:
+    $ref: './auth/api.yaml#/paths/~1auth~1sms~1verify'
+
+  # Slots
+  /slots:
+    $ref: './slots/api.yaml#/paths/~1slots'
+  /slots/{slotId}:
+    $ref: './slots/api.yaml#/paths/~1slots~1{slotId}'
+
+  # Bookings
+  /bookings:
+    $ref: './bookings/api.yaml#/paths/~1bookings'
+  /bookings/{bookingId}:
+    $ref: './bookings/api.yaml#/paths/~1bookings~1{bookingId}'
+  /bookings/{bookingId}/cancel:
+    $ref: './bookings/api.yaml#/paths/~1bookings~1{bookingId}~1cancel'
+
+  # Instructors
+  /slots/{slotId}/ratings:
+    $ref: './instructors/api.yaml#/paths/~1slots~1{slotId}~1ratings'
+
+  # Profile
+  /clients/me:
+    $ref: './profile/api.yaml#/paths/~1clients~1me'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      $ref: './auth/models.yaml#/components/securitySchemes/BearerAuth'

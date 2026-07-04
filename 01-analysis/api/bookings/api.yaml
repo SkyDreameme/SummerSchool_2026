@@ -1,0 +1,133 @@
+openapi: 3.0.3
+info:
+  title: Bookings API
+  version: 1.0.0
+
+tags:
+  - name: Bookings
+    description: Брони клиента (SCR-004, SCR-005, SCR-006, UC-3, UC-5)
+
+paths:
+  /bookings:
+    get:
+      tags: [Bookings]
+      operationId: listMyBookings
+      summary: Список броней клиента с фильтрацией по статусу (SCR-005, FR-16, UC-9)
+      description: |
+        Три вкладки UI соответствуют трём значениям `group`:
+        - `active`    → Pending, Paid
+        - `past`      → Completed (NFR-12 — автоматический переход)
+        - `cancelled` → CancelledByClient, CancelledByCenter
+      parameters:
+        - name: group
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [active, past, cancelled]
+      responses:
+        '200':
+          description: Список броней
+          content:
+            application/json:
+              schema:
+                $ref: './models.yaml#/components/schemas/BookingListResponse'
+
+    post:
+      tags: [Bookings]
+      operationId: createBooking
+      summary: Создание брони (SCR-004, FR-5, UC-3)
+      description: |
+        Создаёт ровно одну бронь на клиента в одном заезде (FR-5).
+        Атомарная проверка свободных мест — на стороне бэкенда (NFR-2).
+        После создания возвращает `depositLink` (FR-8) и статус `Pending`.
+        Скидка лояльности применяется бэкендом при расчёте `finalPrice` (FR-7, NFR-11).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './models.yaml#/components/schemas/CreateBookingRequest'
+      responses:
+        '201':
+          description: Бронь создана
+          content:
+            application/json:
+              schema:
+                $ref: './models.yaml#/components/schemas/Booking'
+        '400':
+          $ref: '../common/models.yaml#/components/responses/BadRequest'
+        '409':
+          description: Конфликт — мест нет / бронь уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '../common/models.yaml#/components/schemas/Error'
+              examples:
+                noSeats:
+                  summary: Мест нет (race condition)
+                  value:
+                    code: NO_SEATS
+                    message: Мест на этот заезд больше нет
+                alreadyExists:
+                  summary: Бронь уже существует (FR-5)
+                  value:
+                    code: BOOKING_ALREADY_EXISTS
+                    message: У вас уже есть бронь на этот заезд
+        '410':
+          description: Слот был отменён центром во время создания брони (п. 6 из review)
+          content:
+            application/json:
+              schema:
+                $ref: '../common/models.yaml#/components/schemas/Error'
+              example:
+                code: SLOT_CANCELLED
+                message: Заезд был отменён центром. Причина — сильная гроза
+
+  /bookings/{bookingId}:
+    get:
+      tags: [Bookings]
+      operationId: getBooking
+      summary: Детали брони (SCR-006, UC-5, UC-6)
+      parameters:
+        - $ref: './models.yaml#/components/parameters/BookingId'
+      responses:
+        '200':
+          description: Детали брони
+          content:
+            application/json:
+              schema:
+                $ref: './models.yaml#/components/schemas/BookingDetails'
+        '404':
+          $ref: '../common/models.yaml#/components/responses/NotFound'
+
+  /bookings/{bookingId}/cancel:
+    post:
+      tags: [Bookings]
+      operationId: cancelBooking
+      summary: Отмена брони клиентом (SCR-006, SCR-009, BS-001, FR-10, UC-5)
+      description: |
+        Условие: `now + 2h <= startsAt` включительно (FR-10).
+        Проверка выполняется на бэкенде (NFR-1).
+        После успешной отмены статус брони → `CancelledByClient`.
+        Автоматические возвраты не производятся (NFR-9).
+      parameters:
+        - $ref: './models.yaml#/components/parameters/BookingId'
+      responses:
+        '200':
+          description: Бронь отменена
+          content:
+            application/json:
+              schema:
+                $ref: './models.yaml#/components/schemas/Booking'
+        '404':
+          $ref: '../common/models.yaml#/components/responses/NotFound'
+        '422':
+          description: Окно отмены закрыто (BS-001, п. 9 из review)
+          content:
+            application/json:
+              schema:
+                $ref: '../common/models.yaml#/components/schemas/Error'
+              example:
+                code: CANCEL_WINDOW_CLOSED
+                message: Время отмены истекло. Свяжитесь с администратором

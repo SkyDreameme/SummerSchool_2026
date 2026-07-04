@@ -1,0 +1,25 @@
+openapi: 3.0.3
+info:
+  title: Profile API
+  version: 1.0.0
+
+tags:
+  - name: Clients
+    description: Профиль клиента и лояльность (SCR-007, UC-8)
+
+paths:
+  /clients/me:
+    get:
+      tags: [Clients]
+      operationId: getMyProfile
+      summary: Профиль клиента и лояльность (SCR-007, FR-15, UC-8)
+      description: |
+        Возвращает номер телефона, статус лояльности и размер скидки.
+        Логика начисления статусов — на стороне бэкенда (NFR-11).
+      responses:
+        '200':
+          description: Профиль клиента
+          content:
+            application/json:
+              schema:
+                $ref: './models.yaml#/components/schemas/Client'

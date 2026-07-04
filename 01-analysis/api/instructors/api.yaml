@@ -1,0 +1,55 @@
+openapi: 3.0.3
+info:
+  title: Instructors API
+  version: 1.0.0
+
+tags:
+  - name: Ratings
+    description: Оценка маршала (SCR-008, UC-7)
+
+paths:
+  /slots/{slotId}/ratings:
+    post:
+      tags: [Ratings]
+      operationId: rateMarshal
+      summary: Оценка маршала (SCR-008, FR-14, UC-7)
+      description: |
+        Один клиент — одна оценка на слот (data-model §2.5).
+        Текстовый комментарий не предусмотрен (FR-14).
+        Push-триггер — через 1 час после окончания заезда (FR-12).
+        Если заезд отменён центром — оценка не принимается (п. 12 из review).
+      parameters:
+        - $ref: '../slots/models.yaml#/components/parameters/SlotId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './models.yaml#/components/schemas/CreateRatingRequest'
+      responses:
+        '201':
+          description: Оценка сохранена
+          content:
+            application/json:
+              schema:
+                $ref: './models.yaml#/components/schemas/MarshalRating'
+        '404':
+          $ref: '../common/models.yaml#/components/responses/NotFound'
+        '409':
+          description: Клиент уже оценил этот слот (п. 11 из review)
+          content:
+            application/json:
+              schema:
+                $ref: '../common/models.yaml#/components/schemas/Error'
+              example:
+                code: ALREADY_RATED
+                message: Вы уже оценили этот заезд
+        '422':
+          description: Заезд не состоялся / ещё не завершился (п. 12, 13 из review)
+          content:
+            application/json:
+              schema:
+                $ref: '../common/models.yaml#/components/schemas/Error'
+              example:
+                code: RATING_NOT_ALLOWED
+                message: Оценка доступна только после завершения заезда

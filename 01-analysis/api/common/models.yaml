@@ -1,0 +1,70 @@
+openapi: 3.0.3
+info:
+  title: Common Models
+  version: 1.0.0
+
+components:
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Машинно-читаемый код ошибки
+        message:
+          type: string
+          description: Человекочитаемое описание
+        retryAfterSeconds:
+          type: integer
+          description: Опционально — через сколько секунд повторить
+
+    TrackConfiguration:
+      type: string
+      enum: [Short, Long]
+
+    GearOption:
+      type: string
+      enum: [Rental, Own]
+
+    SlotStatus:
+      type: string
+      enum: [Open, CancelledByCenter]
+      description: data-model §2.2
+
+    BookingPaymentStatus:
+      type: string
+      enum: [Pending, Paid, Expired]
+      description: data-model §2.4
+
+    BookingStatus:
+      type: string
+      enum: [Created, Paid, Completed, CancelledByClient, CancelledByCenter]
+      description: |
+        Жизненный цикл брони (data-model §2.4).
+        Соответствие UI-вкладкам SCR-005:
+        - active    → Created, Paid
+        - past      → Completed
+        - cancelled → CancelledByClient, CancelledByCenter
+
+    LoyaltyStatus:
+      type: string
+      enum: [None, Bronze, Silver]
+
+  responses:
+    BadRequest:
+      description: Некорректный запрос
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: Ресурс не найден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: NOT_FOUND
+            message: Ресурс не найден

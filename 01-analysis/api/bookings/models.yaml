@@ -1,0 +1,92 @@
+openapi: 3.0.3
+info:
+  title: Bookings Models
+  version: 1.0.0
+
+components:
+  parameters:
+    BookingId:
+      name: bookingId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    CreateBookingRequest:
+      type: object
+      required: [slotId, gearOption]
+      properties:
+        slotId:
+          type: string
+          format: uuid
+        gearOption:
+          $ref: '../common/models.yaml#/components/schemas/GearOption'
+
+    Booking:
+      type: object
+      required:
+        - id
+        - slotId
+        - gearOption
+        - finalPrice
+        - depositLink
+        - paymentStatus
+        - status
+        - rated
+      properties:
+        id:
+          type: string
+          format: uuid
+        slotId:
+          type: string
+          format: uuid
+        gearOption:
+          $ref: '../common/models.yaml#/components/schemas/GearOption'
+        finalPrice:
+          type: number
+          format: decimal
+          description: |
+            Вычисляется бэкендом с учётом скидки лояльности (FR-7, NFR-11).
+            Формула: price{Rental|OwnGear} × (1 − discountPercent/100).
+        depositLink:
+          type: string
+          format: uri
+          description: |
+            Ссылка на перевод по номеру телефона (FR-8).
+            Генерируется бэкендом после создания брони.
+        paymentStatus:
+          $ref: '../common/models.yaml#/components/schemas/BookingPaymentStatus'
+        status:
+          $ref: '../common/models.yaml#/components/schemas/BookingStatus'
+        rated:
+          type: boolean
+          description: Флаг: оставлена ли оценка маршалу (data-model §2.4)
+
+    BookingDetails:
+      allOf:
+        - $ref: '#/components/schemas/Booking'
+        - type: object
+          properties:
+            slot:
+              $ref: '../slots/models.yaml#/components/schemas/Slot'
+              description: Вложенный слот для отображения деталей (SCR-006)
+            cancellationReason:
+              type: string
+              nullable: true
+              description: Причина отмены центром (FR-17, SCR-006)
+            canCancel:
+              type: boolean
+              description: |
+                Вычисляется бэкендом: `now + 2h <= startsAt` (FR-10).
+                Клиент использует для активации CTA «Отменить» в SCR-006.
+
+    BookingListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BookingDetails'

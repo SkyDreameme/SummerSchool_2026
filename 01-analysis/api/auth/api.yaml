@@ -1,0 +1,80 @@
+openapi: 3.0.3
+info:
+  title: Auth API
+  version: 1.0.0
+
+tags:
+  - name: Auth
+    description: Регистрация и вход по SMS-коду (SCR-001, UC-1)
+
+paths:
+  /auth/sms/send:
+    post:
+      tags: [Auth]
+      operationId: sendSmsCode
+      summary: Отправка SMS-кода (FR-1, UC-1)
+      description: |
+        Инициирует отправку SMS-кода на указанный номер.
+        Если номер уже зарегистрирован — выполняется вход (FR-1).
+        Повторная отправка ограничена таймером (60 с) — см. SCR-001.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './models.yaml#/components/schemas/SendSmsRequest'
+      responses:
+        '202':
+          description: Код отправлен
+          content:
+            application/json:
+              schema:
+                $ref: './models.yaml#/components/schemas/SendSmsResponse'
+        '400':
+          $ref: '../common/models.yaml#/components/responses/BadRequest'
+        '429':
+          description: Превышен лимит отправок / таймер повторной отправки
+          content:
+            application/json:
+              schema:
+                $ref: '../common/models.yaml#/components/schemas/Error'
+              example:
+                code: SMS_RATE_LIMIT
+                message: Повторная отправка доступна через 45 секунд
+                retryAfterSeconds: 45
+
+  /auth/sms/verify:
+    post:
+      tags: [Auth]
+      operationId: verifySmsCode
+      summary: Проверка SMS-кода и получение токена (FR-1, UC-1)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './models.yaml#/components/schemas/VerifySmsRequest'
+      responses:
+        '200':
+          description: Успешная авторизация
+          content:
+            application/json:
+              schema:
+                $ref: './models.yaml#/components/schemas/AuthResponse'
+        '401':
+          description: Неверный или просроченный код
+          content:
+            application/json:
+              schema:
+                $ref: '../common/models.yaml#/components/schemas/Error'
+              example:
+                code: INVALID_CODE
+                message: Неверный код. Осталось попыток — 2
+        '429':
+          description: Превышено число попыток
+          content:
+            application/json:
+              schema:
+                $ref: '../common/models.yaml#/components/schemas/Error'

@@ -1,0 +1,85 @@
+openapi: 3.0.3
+info:
+  title: Slots Models
+  version: 1.0.0
+
+components:
+  parameters:
+    SlotId:
+      name: slotId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    Marshal:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      description: |
+        Публичный рейтинг маршала не возвращается (FR-18).
+
+    Slot:
+      type: object
+      required:
+        - id
+        - startsAt
+        - endsAt
+        - trackConfiguration
+        - marshal
+        - totalSeats
+        - availableSeats
+        - priceWithRental
+        - priceOwnGear
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        trackConfiguration:
+          $ref: '../common/models.yaml#/components/schemas/TrackConfiguration'
+        marshal:
+          $ref: '#/components/schemas/Marshal'
+        totalSeats:
+          type: integer
+          description: 8 для Short, 14 для Long (data-model §2.2)
+        availableSeats:
+          type: integer
+          minimum: 0
+          description: |
+            Атомарно контролируется бэкендом (NFR-2).
+            Если < 0 (баг бэкенда) — клиент трактует как 0 (п. 24 из review).
+        priceWithRental:
+          type: number
+          format: decimal
+        priceOwnGear:
+          type: number
+          format: decimal
+        status:
+          $ref: '../common/models.yaml#/components/schemas/SlotStatus'
+        cancellationReason:
+          type: string
+          nullable: true
+          description: Заполняется при status = CancelledByCenter (FR-17)
+
+    SlotListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Slot'
