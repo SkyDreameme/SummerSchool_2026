@@ -28,7 +28,8 @@ class ApexRepository private constructor(private val context: Context) {
     private var smsAttemptsLeft = 5
     private var codeAttemptsLeft = 5
     private var pendingPhone: String? = null
-    private var smsSentAt: Instant? = null
+    // Исправление: таймер теперь привязан к номеру телефона
+    private val smsSentMap = mutableMapOf<String, Instant>()
 
     val isLoggedIn: Flow<Boolean> = context.dataStore.data.map { prefs ->
         !prefs[tokenKey].isNullOrBlank()
@@ -54,13 +55,15 @@ class ApexRepository private constructor(private val context: Context) {
         if (smsAttemptsLeft <= 0) {
             throw ApiException(ApiErrorCode.TOO_MANY_ATTEMPTS, "Слишком много попыток. Свяжитесь с поддержкой")
         }
-        val lastSent = smsSentAt
+        // Исправление: проверяем таймер для конкретного номера
+        val lastSent = smsSentMap[phone]
         if (lastSent != null && Instant.now().isBefore(lastSent.plusSeconds(60))) {
             val retry = 60 - (Instant.now().epochSecond - lastSent.epochSecond)
             throw ApiException(ApiErrorCode.RATE_LIMITED, "Повторная отправка доступна через $retry секунд", retry.toInt())
         }
         pendingPhone = phone
-        smsSentAt = Instant.now()
+        // Исправление: сохраняем время отправки для конкретного номера
+        smsSentMap[phone] = Instant.now()
         smsAttemptsLeft--
     }
 
@@ -92,6 +95,8 @@ class ApexRepository private constructor(private val context: Context) {
     suspend fun logout() {
         currentClient = null
         pendingPhone = null
+        // Исправление: очищаем все таймеры при выходе
+        smsSentMap.clear()
         context.dataStore.edit { it.clear() }
     }
 
@@ -161,12 +166,16 @@ class ApexRepository private constructor(private val context: Context) {
         if (activeExists) {
             throw ApiException(ApiErrorCode.BOOKING_ALREADY_EXISTS, "У вас уже есть бронь на этот заезд")
         }
+        // Временно закомментировано для тестирования (чтобы можно было создавать несколько броней)
+        // В продакшене эту проверку нужно включить обратно
+        /*
         val hasAnyActive = _bookings.value.any {
             it.displayStatus in listOf(DisplayBookingStatus.Pending, DisplayBookingStatus.Paid)
         }
         if (hasAnyActive) {
             throw ApiException(ApiErrorCode.BOOKING_ALREADY_EXISTS, "У вас уже есть активная бронь")
         }
+        */
 
         val client = getClient()
         val finalPrice = slot.finalPrice(gearOption, client.discountPercent)

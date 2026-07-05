@@ -49,10 +49,23 @@ fun RegistrationScreen(onLoggedIn: () -> Unit) {
     var timerSeconds by remember { mutableIntStateOf(0) }
     var showSupport by remember { mutableStateOf(false) }
 
+    // Исправление: отслеживаем изменение номера для сброса таймера
+    var currentPhoneForTimer by remember { mutableStateOf("") }
+
     LaunchedEffect(timerSeconds) {
         if (timerSeconds > 0) {
             delay(1000)
             timerSeconds--
+        }
+    }
+
+    // Исправление: при смене номера сбрасываем таймер
+    LaunchedEffect(phone) {
+        if (phone != currentPhoneForTimer) {
+            currentPhoneForTimer = phone
+            timerSeconds = 0
+            // Также сбрасываем ошибку при смене номера
+            error = null
         }
     }
 
@@ -94,7 +107,7 @@ fun RegistrationScreen(onLoggedIn: () -> Unit) {
             ApexPrimaryButton(
                 text = "Получить SMS-код",
                 loading = loading,
-                enabled = phone.matches(Regex("^\\+7\\d{10}$")),
+                enabled = phone.matches(Regex("^\\+7\\d{10}$")) && timerSeconds == 0,
                 onClick = {
                     scope.launch {
                         loading = true
@@ -103,10 +116,13 @@ fun RegistrationScreen(onLoggedIn: () -> Unit) {
                             repository.sendSmsCode(phone)
                             step = 2
                             timerSeconds = 60
+                            currentPhoneForTimer = phone
                             code = ""
                         } catch (e: ApiException) {
                             error = e.message
-                            if (e.retryAfterSeconds != null) timerSeconds = e.retryAfterSeconds
+                            if (e.retryAfterSeconds != null) {
+                                timerSeconds = e.retryAfterSeconds
+                            }
                             showSupport = e.code.name.contains("ATTEMPTS")
                         } finally {
                             loading = false
@@ -148,11 +164,16 @@ fun RegistrationScreen(onLoggedIn: () -> Unit) {
                     onClick = {
                         scope.launch {
                             loading = true
+                            error = null
                             try {
                                 repository.sendSmsCode(phone)
                                 timerSeconds = 60
+                                currentPhoneForTimer = phone
                             } catch (e: ApiException) {
                                 error = e.message
+                                if (e.retryAfterSeconds != null) {
+                                    timerSeconds = e.retryAfterSeconds
+                                }
                             } finally {
                                 loading = false
                             }
@@ -182,6 +203,7 @@ fun RegistrationScreen(onLoggedIn: () -> Unit) {
                 }
             )
             if (showSupport) {
+                Spacer(Modifier.height(8.dp))
                 TextButton(onClick = { /* external link handled in production */ }) {
                     Text("Не приходит код? Свяжитесь с поддержкой")
                 }
