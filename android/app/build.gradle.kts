@@ -15,6 +15,7 @@ android {
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunnerArguments["orchestrator"] = "true"
     }
 
     buildTypes {
@@ -47,7 +48,14 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "**/LICENSE.txt"
+            excludes += "**/NOTICE.txt"
         }
+    }
+
+    testOptions {
+        execution = "ANDROIDX_TEST_ORCHESTRATOR"
+        animationsDisabled = true
     }
 }
 
@@ -71,24 +79,23 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
+    // ====== ТЕСТИРОВАНИЕ ======
 
-    // ==================== ТЕСТИРОВАНИЕ ====================
-
-    // JUnit для unit-тестов (src/test)
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     testImplementation("io.mockk:mockk:1.13.8")
 
-    // AndroidX Test для инструментальных тестов (src/androidTest)
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    // AndroidX Test
+    androidTestImplementation("androidx.test:core:1.5.0")
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test:rules:1.5.0")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 
     // Compose UI Testing
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.6.0")
     debugImplementation("androidx.compose.ui:ui-test-manifest:1.6.0")
 
-    // Для работы ApplicationProvider в тестах
-    androidTestImplementation("androidx.test.core:core:1.5.0")
+    // Оркестратор для стабильности тестов
+    androidTestUtil("androidx.test:orchestrator:1.4.2")
 }
